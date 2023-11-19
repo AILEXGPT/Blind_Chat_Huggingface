@@ -1,0 +1,42 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+body, html {
+  @apply bg-black overflow-hidden;
+}
+
+.loading-dots {
+  @apply flex justify-start items-center gap-1
+}
+.loading-dots span{
+  @apply inline-block w-2 h-2 bg-white rounded-full
+}
+.loading-dots.grey span{
+  @apply inline-block w-2 h-2 bg-gray-400 rounded-full
+}
+.loading-dots span:nth-child(1) {
+  animation: move 1s infinite;
+}
+.loading-dots span:nth-child(2) {
+  animation: move 1s .2s infinite;
+}
+.loading-dots span:nth-child(3) {
+  animation: move 1s .4s infinite;
+}
+
+/* create keyframes to move each span one by one infinite animation */
+@keyframes move {
+  0% {
+    transform: translateY(0);
+    opacity: .5;
+  }
+  50% {
+    transform: translateY(-6px);
+    opacity: 1;
+  }
+  100% {
+    transform: translateY(0);
+    opacity: .5;
+  }
+}
