@@ -1,30 +1,32 @@
-# Dockerfile
+# syntax=docker/dockerfile:1
+# read the doc: https://huggingface.co/docs/hub/spaces-sdks-docker
+# you will also find guides on how best to write your Dockerfile
+FROM node:19 as builder-production
 
-# Use an official Node.js runtime as the base image
-FROM node:18
+WORKDIR /app
 
-USER 1000
+COPY --link --chown=1000 package-lock.json package.json ./
+RUN --mount=type=cache,target=/app/.npm \
+        npm set cache /app/.npm && \
+        npm ci --omit=dev
 
-# Set the working directory in the container
-WORKDIR /usr/src/app
+FROM builder-production as builder
 
-# Copy package.json and package-lock.json to the container
-COPY --chown=1000 package.json package-lock.json ./
+RUN --mount=type=cache,target=/app/.npm \
+        npm set cache /app/.npm && \
+        npm ci
 
-# Install dependencies
-RUN npm install
+COPY --link --chown=1000 . .
 
-VOLUME /data
+RUN --mount=type=secret,id=DOTENV_LOCAL,dst=.env.local \
+    npm run build
 
-# Copy the rest of the application files to the container
-COPY --chown=1000 . .
-RUN chmod +x entrypoint.sh
+FROM node:19-slim
 
-# Build the Next.js application for production
-# RUN npm run build
+RUN npm install -g pm2
 
-# Expose the application port (assuming your app runs on port 3000)
-EXPOSE 3002
+COPY --from=builder-production /app/node_modules /app/node_modules
+COPY --link --chown=1000 package.json /app/package.json
+COPY --from=builder /app/build /app/build
 
-# Start the application
-ENTRYPOINT ["/usr/src/app/entrypoint.sh"]
+CMD pm2 start /app/build/index.js -i $CPU_CORES --no-daemon
